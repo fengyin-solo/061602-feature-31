@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import type { GameState } from '@/types/game'
-import { WEATHER_COLORS } from '@/utils/constants'
+import type { GameState, PairingPreference } from '@/types/game'
+import { WEATHER_COLORS, PAIRING_NAMES, PAIRING_EMOJI, PAIRING_DESCRIPTIONS } from '@/utils/constants'
 
 const props = defineProps<{
   state: GameState
@@ -10,12 +10,16 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'release'): void
-  (e: 'breed'): void
+  (e: 'breed', preference: PairingPreference): void
 }>()
 
 const lastLogCount = ref(0)
 const showTip = ref(false)
 const tipMessage = ref('')
+const showPairingPanel = ref(false)
+const selectedPreference = ref<PairingPreference>('natural')
+
+const pairingOptions: PairingPreference[] = ['brave', 'gentle', 'energetic', 'natural']
 
 watch(
   () => props.state.eventLog.length,
@@ -32,6 +36,28 @@ watch(
   },
   { immediate: true }
 )
+
+watch(
+  () => props.allAdults,
+  (val) => {
+    if (!val) {
+      showPairingPanel.value = false
+    }
+  }
+)
+
+const openPairingPanel = () => {
+  showPairingPanel.value = true
+}
+
+const cancelPairing = () => {
+  showPairingPanel.value = false
+}
+
+const confirmBreed = () => {
+  emit('breed', selectedPreference.value)
+  showPairingPanel.value = false
+}
 </script>
 
 <template>
@@ -60,7 +86,8 @@ watch(
           <div class="font-display text-2xl text-yellow-300 text-stroke">全部长成成鸟啦！</div>
           <div class="text-sm text-white/70 mt-1">请选择它们的未来...</div>
         </div>
-        <div class="flex gap-3 justify-center flex-wrap">
+
+        <div v-if="!showPairingPanel" class="flex gap-3 justify-center flex-wrap">
           <button
             class="px-6 py-3 bg-gradient-to-r from-sky-500 to-blue-600 text-white rounded-2xl font-bold
                    btn-3d hover:from-sky-400 hover:to-blue-500 flex items-center gap-2"
@@ -73,7 +100,7 @@ watch(
             v-if="state.breedingCount < state.maxBreedingRounds"
             class="px-6 py-3 bg-gradient-to-r from-pink-500 to-rose-600 text-white rounded-2xl font-bold
                    btn-3d hover:from-pink-400 hover:to-rose-500 flex items-center gap-2"
-            @click="emit('breed')"
+            @click="openPairingPanel"
           >
             <span class="text-xl">💝</span>
             留下配对 ({{ state.breedingCount }}/{{ state.maxBreedingRounds }})
@@ -87,6 +114,46 @@ watch(
             <span class="text-xl">🏡</span>
             留下陪伴（结束）
           </button>
+        </div>
+
+        <div v-else class="space-y-3">
+          <div class="text-center text-sm text-amber-200 mb-2">选择配对偏好，影响后代性格倾向</div>
+          <div class="grid grid-cols-2 gap-2">
+            <button
+              v-for="opt in pairingOptions"
+              :key="opt"
+              :class="[
+                'p-3 rounded-xl text-left transition-all border',
+                selectedPreference === opt
+                  ? 'bg-yellow-400/20 border-yellow-400/60 ring-2 ring-yellow-400/40'
+                  : 'bg-white/8 border-white/10 hover:bg-white/15',
+              ]"
+              @click="selectedPreference = opt"
+            >
+              <div class="flex items-center gap-2 mb-1">
+                <span class="text-lg">{{ PAIRING_EMOJI[opt] }}</span>
+                <span class="font-bold text-white text-sm">{{ PAIRING_NAMES[opt] }}</span>
+              </div>
+              <div class="text-[11px] text-white/60 leading-snug">{{ PAIRING_DESCRIPTIONS[opt] }}</div>
+            </button>
+          </div>
+          <div class="flex gap-2 pt-1">
+            <button
+              class="flex-1 py-2.5 bg-gradient-to-r from-pink-500 to-rose-600 text-white rounded-xl font-bold
+                     btn-3d hover:from-pink-400 hover:to-rose-500 flex items-center justify-center gap-1.5 text-sm"
+              @click="confirmBreed"
+            >
+              <span>{{ PAIRING_EMOJI[selectedPreference] }}</span>
+              确认配对
+            </button>
+            <button
+              class="px-4 py-2.5 bg-white/10 text-white/70 rounded-xl font-medium
+                     hover:bg-white/20 transition-all text-sm"
+              @click="cancelPairing"
+            >
+              返回
+            </button>
+          </div>
         </div>
       </div>
     </div>

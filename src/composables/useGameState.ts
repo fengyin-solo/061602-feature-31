@@ -1,5 +1,5 @@
 import { reactive, computed, watch } from 'vue'
-import type { GameState, Bird, Berry, GrowthStage, Personality, BerryType, Weather, GameScore } from '@/types/game'
+import type { GameState, Bird, Berry, GrowthStage, Personality, BerryType, Weather, GameScore, PairingPreference } from '@/types/game'
 import {
   ATTR_MIN, ATTR_MAX, DEATH_THRESHOLD,
   STAGE_DURATION, FOOD_NEED_MULTIPLIER,
@@ -8,6 +8,7 @@ import {
   BERRY_VALUES, WEATHER_CHANGE_INTERVAL, WEATHER_EFFECTS,
   DAY_DURATION, INITIAL_FOOD, MIN_EGGS, MAX_EGGS,
   MAX_BREEDING_ROUNDS, BIRD_NAMES,
+  PAIRING_PERSONALITY_WEIGHTS, PAIRING_EVENTS, PAIRING_NAMES, PAIRING_EMOJI,
 } from '@/utils/constants'
 import { randomInt, randomFloat, clamp, randomChoice, generateId, chance } from '@/utils/random'
 import { saveGame, loadGame, clearSave } from '@/utils/storage'
@@ -26,6 +27,7 @@ const createInitialState = (): GameState => ({
   breedingCount: 0,
   maxBreedingRounds: MAX_BREEDING_ROUNDS,
   eventLog: [],
+  pairingHistory: [],
 })
 
 const state = reactive<GameState>(createInitialState())
@@ -58,7 +60,7 @@ const generatePersonality = (hatchDuration: number, avgHatchDuration: number): P
   return randomChoice(PERSONALITIES)
 }
 
-const createEgg = (index: number): Bird => {
+const createEgg = (index: number, preference?: PairingPreference): Bird => {
   const hatchDuration = randomInt(15000, 35000)
   return {
     id: generateId(),
@@ -76,6 +78,7 @@ const createEgg = (index: number): Bird => {
     isDead: false,
     feedingCount: 0,
     lastFedAt: 0,
+    parentPreference: preference,
   }
 }
 
@@ -243,7 +246,15 @@ const hatchBird = (bird: Bird) => {
 
   bird.stage = 'chick'
   bird.stageProgress = 0
-  bird.personality = generatePersonality(bird.hatchDuration, avgHatch)
+
+  if (bird.parentPreference) {
+    const weights = PAIRING_PERSONALITY_WEIGHTS[bird.parentPreference]
+    const basePersonality = generatePersonality(bird.hatchDuration, avgHatch)
+    bird.personality = chance(0.7) ? randomChoice(weights) : basePersonality
+  } else {
+    bird.personality = generatePersonality(bird.hatchDuration, avgHatch)
+  }
+
   bird.name = pickName()
   bird.hunger = randomInt(50, 70)
   bird.fear = randomInt(20, 50)
@@ -378,7 +389,7 @@ const releaseBirds = () => {
   endGame('release')
 }
 
-const keepAndBreed = () => {
+const keepAndBreed = (preference: PairingPreference) => {
   const adults = state.birds.filter(b => b.stage === 'adult' && !b.isDead)
   if (adults.length < 2 || state.breedingCount >= state.maxBreedingRounds) {
     endGame('keep')
@@ -387,6 +398,8 @@ const keepAndBreed = () => {
 
   state.breedingCount++
   state.phase = 'breeding'
+  state.pairingPreference = preference
+  state.pairingHistory.push(preference)
 
   adults.forEach(b => {
     b.hunger = clamp(b.hunger - randomInt(10, 20), ATTR_MIN, ATTR_MAX)
@@ -394,10 +407,16 @@ const keepAndBreed = () => {
 
   const newEggCount = randomInt(MIN_EGGS, MAX_EGGS)
   for (let i = 0; i < newEggCount; i++) {
-    state.birds.push(createEgg(state.birds.length))
+    state.birds.push(createEgg(state.birds.length, preference))
   }
 
   addEventLog(`💝 成鸟们产下了 ${newEggCount} 颗新蛋！第 ${state.breedingCount} 窝`, 'success')
+  addEventLog(`${PAIRING_EMOJI[preference]} 配对偏好：${PAIRING_NAMES[preference]}`, 'info')
+
+  const events = PAIRING_EVENTS[preference]
+  const event = randomChoice(events)
+  addEventLog(event.message, event.type)
+
   state.phase = 'playing'
 }
 
@@ -422,11 +441,16 @@ const calculateScore = (): GameScore => {
     ? aliveBirds.reduce((s, b) => s + (b.feedingCount > 10 ? 5 : 2), 0)
     : 0
 
+  const pairingBonus = state.pairingHistory.length * 8
+
+  const pairingSummary = generatePairingSummary()
+
   const totalScore = Math.round(
     survivalRate * 40 +
     avgHealth * 0.3 +
     breedingBonus +
-    personalityBonus
+    personalityBonus +
+    pairingBonus
   )
 
   let stars = 1
@@ -447,9 +471,33 @@ const calculateScore = (): GameScore => {
     avgHealth: Math.round(avgHealth),
     breedingBonus,
     personalityBonus,
+    pairingBonus,
+    pairingSummary,
     stars,
     rank,
   }
+}
+
+const generatePairingSummary = (): string => {
+  if (state.pairingHistory.length === 0) {
+    return '本次未进行配对繁殖'
+  }
+
+  const counts: Record<string, number> = {}
+  state.pairingHistory.forEach(p => {
+    counts[p] = (counts[p] || 0) + 1
+  })
+
+  const dominant = Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0] as PairingPreference
+
+  const summaries: Record<PairingPreference, string> = {
+    brave: '勇猛果敢的配对风格，培育出了无所畏惧的探险家',
+    gentle: '温婉柔和的配对风格，营造了温馨安宁的巢穴氛围',
+    energetic: '活力四射的配对风格，孵化出精力充沛的活力小鸟',
+    natural: '顺其自然的配对风格，让生命自由绽放',
+  }
+
+  return summaries[dominant]
 }
 
 const endGame = (_reason: string) => {

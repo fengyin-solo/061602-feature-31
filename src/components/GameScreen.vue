@@ -2,6 +2,7 @@
 import { watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useGameState } from '@/composables/useGameState'
+import type { PairingPreference } from '@/types/game'
 import StatusBar from './StatusBar.vue'
 import NestScene from './NestScene.vue'
 import WeatherOverlay from './WeatherOverlay.vue'
@@ -97,7 +98,7 @@ const handleCollect = (id: string) => {
             :state="state"
             :all-adults="allAdults"
             @release="releaseBirds"
-            @breed="keepAndBreed"
+            @breed="((pref: PairingPreference) => keepAndBreed(pref))"
           />
         </div>
       </div>

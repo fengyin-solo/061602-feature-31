@@ -1,4 +1,4 @@
-import type { Weather, WeatherEffect, BerryType, GrowthStage, Personality } from '@/types/game'
+import type { Weather, WeatherEffect, BerryType, GrowthStage, Personality, PairingPreference } from '@/types/game'
 
 export const ATTR_MIN = 0
 export const ATTR_MAX = 100
@@ -110,3 +110,53 @@ export const BIRD_NAMES = [
   '糖糖', '圆圆', '小米', '小麦', '云朵', '星星', '月亮', '太阳',
   '小橘', '小蓝', '小绿', '小红', '阿黄', '阿白', '阿黑', '阿灰',
 ]
+
+export const PAIRING_NAMES: Record<PairingPreference, string> = {
+  brave: '勇猛果敢',
+  gentle: '温婉柔和',
+  energetic: '活力四射',
+  natural: '顺其自然',
+}
+
+export const PAIRING_EMOJI: Record<PairingPreference, string> = {
+  brave: '🦅',
+  gentle: '🌸',
+  energetic: '⚡',
+  natural: '🌿',
+}
+
+export const PAIRING_DESCRIPTIONS: Record<PairingPreference, string> = {
+  brave: '后代倾向勇敢大胆和好奇活泼，更容易探索外界但也不怕风险',
+  gentle: '后代倾向温柔恬静和胆小害羞，更注重健康与安全感',
+  energetic: '后代倾向好奇活泼和倔强独立，精力旺盛但偶尔倔强难管',
+  natural: '不刻意引导，后代性格随机呈现，一切交给命运',
+}
+
+export const PAIRING_PERSONALITY_WEIGHTS: Record<PairingPreference, Personality[]> = {
+  brave: ['bold', 'bold', 'bold', 'curious', 'curious', 'bold', 'stubborn'],
+  gentle: ['gentle', 'gentle', 'shy', 'shy', 'gentle', 'bold', 'curious'],
+  energetic: ['curious', 'curious', 'stubborn', 'bold', 'curious', 'stubborn', 'gentle'],
+  natural: ['bold', 'shy', 'gentle', 'curious', 'stubborn'],
+}
+
+export const PAIRING_EVENTS: Record<PairingPreference, { message: string; type: string }[]> = {
+  brave: [
+    { message: '🦅 小鸟们在巢边练习展翅，勇敢地迎风而立！', type: 'success' },
+    { message: '💪 一只胆大的小鸟试图飞出巢穴探险，被同伴叫了回来', type: 'warning' },
+    { message: '🌟 勇敢的基因在血脉中流淌，幼鸟们格外好奇外面的世界', type: 'info' },
+  ],
+  gentle: [
+    { message: '🌸 小鸟们依偎在一起，互相梳理羽毛，温馨极了', type: 'success' },
+    { message: '💧 温柔的幼鸟们对下雨有些害怕，紧紧挤在一起取暖', type: 'info' },
+    { message: '🪶 柔和的性格让它们更善于互相关照，健康恢复加快', type: 'success' },
+  ],
+  energetic: [
+    { message: '⚡ 小鸟们在巢里蹦蹦跳跳，精力旺盛得停不下来！', type: 'success' },
+    { message: '😤 一只倔强的幼鸟拒绝进食，坚持了好一会儿才妥协', type: 'warning' },
+    { message: '🌟 活力满满的基因让幼鸟们成长速度似乎更快了', type: 'info' },
+  ],
+  natural: [
+    { message: '🌿 大自然自有安排，小鸟们随性地成长着', type: 'info' },
+    { message: '🍀 顺应天性的方式让每一只幼鸟都独一无二', type: 'success' },
+  ],
+}

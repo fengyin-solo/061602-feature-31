@@ -6,6 +6,8 @@ export type Personality = 'bold' | 'shy' | 'gentle' | 'curious' | 'stubborn'
 
 export type BerryType = 'red' | 'blue' | 'golden'
 
+export type PairingPreference = 'brave' | 'gentle' | 'energetic' | 'natural'
+
 export type GamePhase = 'start' | 'playing' | 'breeding' | 'ended'
 
 export interface Bird {
@@ -29,6 +31,7 @@ export interface Bird {
   justHatched?: boolean
   justGrew?: boolean
   justFed?: boolean
+  parentPreference?: PairingPreference
 }
 
 export interface Berry {
@@ -54,6 +57,8 @@ export interface GameState {
   breedingCount: number
   maxBreedingRounds: number
   eventLog: { id: string; message: string; type: string; timestamp: number }[]
+  pairingPreference?: PairingPreference
+  pairingHistory: PairingPreference[]
   score?: GameScore
   selectedBirdId?: string
 }
@@ -64,6 +69,8 @@ export interface GameScore {
   avgHealth: number
   breedingBonus: number
   personalityBonus: number
+  pairingBonus: number
+  pairingSummary: string
   stars: number
   rank: string
 }
